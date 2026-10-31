@@ -49,16 +49,16 @@ corresponds to about 120 Å of broadening. For small reg use log-domain iteratio
 | `meta/paper_table_C1.csv` | The paper's Table C.1: sample list, number of spectra, phase range, photometric bands |
 | `meta/filters/` | Filter curves (Bessell BVRI, SDSS gri, Swift UVOT b/v) and the CALSPEC Vega spectrum |
 
-To regenerate (about 20 s for all 141 SNe; validation takes about 1 minute):
+To regenerate, run from the repo root (about 20 s for all 141 SNe; validation takes about 1 minute):
 
 ```bash
-.venv/bin/python scripts/download_data.py
+python scripts/download_data.py
 ```
 ```bash
-.venv/bin/python scripts/build_dataset.py
+python scripts/build_dataset.py
 ```
 ```bash
-.venv/bin/python scripts/validate_dataset.py
+python scripts/validate_dataset.py
 ```
 
 ## HDF5 layout

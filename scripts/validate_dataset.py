@@ -1,6 +1,6 @@
 """Validation of data/processed/sn_spectra_ot.h5.
 
-    .venv/bin/python scripts/validate_dataset.py
+    python scripts/validate_dataset.py
 
 Writes figures and data/processed/validation/validation_report.md:
   1. zero points vs paper Table B.1

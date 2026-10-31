@@ -1,6 +1,6 @@
 """Download the raw data for the paper's sample.
 
-    .venv/bin/python scripts/download_data.py
+    python scripts/download_data.py
 
 1. Open Supernova Catalog JSON files (spectra + photometry). The OSC website
    (sne.space) is offline; its data live in the astrocatalogs/sne-* GitHub

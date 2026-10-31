@@ -1,7 +1,7 @@
 """Build the OT-ready spectral time-series dataset of Ramirez et al. (2024).
 
-    .venv/bin/python scripts/build_dataset.py            # all 141 SNe of Table C.1
-    .venv/bin/python scripts/build_dataset.py SN2011fe   # subset
+    python scripts/build_dataset.py            # all 141 SNe of Table C.1
+    python scripts/build_dataset.py SN2011fe   # subset
 
 Outputs (data/processed/):
     sn_spectra_ot.h5       calibrated, gridded spectra + photometry + total-flux curves
