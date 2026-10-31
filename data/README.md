@@ -11,7 +11,7 @@ is exactly the setting of unbalanced OT, where the measures have unequal masses.
 ## Quick start
 
 ```python
-import sys; sys.path.insert(0, '/Users/yixiaofeng/NYU/matching_distribution/OT_project')
+import sys; sys.path.insert(0, '/path/to/OT_project')  # the folder you cloned; can be skipped if you start Python in that folder
 from snprep.load import SNDataset
 
 ds = SNDataset()                              # reads data/processed/sn_spectra_ot.h5
