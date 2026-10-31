@@ -1,1 +1,8 @@
 .DS_Store
+__pycache__/
+# large / regenerable data (scripts/download_data.py, scripts/build_dataset.py)
+data/raw/
+data/meta/sncosmo_cache/
+data/processed/*.h5
+data/meta/tree_*.json
+data/meta/osc_index.json
