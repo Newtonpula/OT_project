@@ -1,0 +1,32 @@
+m15mlt1: Olivares fit a0=1.68 mag, t_PT=156.4 d, w0=4.0 d
+m15mlt1: no time in the _list file, skipped: m15_du_sch_mlt1_FeC_mix0p4_1.fl, m15_du_sch_mlt1_FeC_mix0p4_2.fl
+m15mlt3: Olivares fit a0=1.49 mag, t_PT=148.0 d, w0=3.8 d
+m15z2m2: Olivares fit a0=2.23 mag, t_PT=136.0 d, w0=3.9 d
+m15z2m2: no time in the _list file, skipped: m15_du_sch_FeC_mix0p4_1.fl
+m15z2m3: Olivares fit a0=1.35 mag, t_PT=152.1 d, w0=3.1 d
+m15z4m2: Olivares fit a0=1.74 mag, t_PT=134.3 d, w0=3.8 d
+m15z4m2: no time in the _list file, skipped: m15_du_sch_z4m2_FeC_mix0p4_26.fl, m15_du_sch_z4m2_FeC_mix0p4_27.fl, m15_du_sch_z4m2_FeC_mix0p4_28.fl, m15_du_sch_z4m2_FeC_mix0p4_3.fl
+m15z8m3: Olivares fit a0=1.92 mag, t_PT=136.0 d, w0=2.9 d
+m15z8m3: no time in the _list file, skipped: m15_du_sch_z8m3_FeC_mix0p4_25.fl
+DDC0      Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -18.7 to   84.4 d | peak M_V -19.69, t(V max) 19.71 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC10     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -19.5 to   83.6 d | peak M_V -19.40, t(V max) 20.51 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC10_M4  Ia  42 spectra, t_exp   1.55-  60.0 d, phase   -21.8 to   36.6 d | peak M_V -19.40, t(V max) 23.36 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC15     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -19.7 to   83.4 d | peak M_V -19.23, t(V max) 20.72 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC17     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -20.5 to   82.7 d | peak M_V -19.05, t(V max) 21.44 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC20     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -20.1 to   83.0 d | peak M_V -18.80, t(V max) 21.08 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC22     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -19.8 to   83.3 d | peak M_V -18.41, t(V max) 20.80 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC25     Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -20.3 to   82.8 d | peak M_V -17.76, t(V max) 21.29 d after explosion | rebin integral ratio 1.00000-1.00000
+DDC6      Ia  50 spectra, t_exp   0.98- 104.1 d, phase   -19.4 to   83.7 d | peak M_V -19.54, t(V max) 20.37 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL11   Ia  43 spectra, t_exp   1.00- 107.5 d, phase   -20.0 to   86.6 d | peak M_V -18.78, t(V max) 21.00 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL12   Ia  42 spectra, t_exp   1.00-  50.2 d, phase   -19.9 to   29.2 d | peak M_V -18.60, t(V max) 20.94 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL1    Ia  42 spectra, t_exp   1.00-  50.2 d, phase   -19.7 to   29.5 d | peak M_V -19.59, t(V max) 20.65 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL3    Ia  42 spectra, t_exp   1.00-  50.2 d, phase   -20.0 to   29.2 d | peak M_V -19.51, t(V max) 20.95 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL4    Ia  42 spectra, t_exp   1.00-  50.2 d, phase   -20.2 to   29.0 d | peak M_V -19.28, t(V max) 21.20 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL7    Ia  43 spectra, t_exp   1.00- 107.5 d, phase   -20.1 to   86.5 d | peak M_V -19.39, t(V max) 21.08 d after explosion | rebin integral ratio 1.00000-1.00000
+PDDEL9    Ia  42 spectra, t_exp   1.00-  50.2 d, phase   -20.1 to   29.0 d | peak M_V -19.06, t(V max) 21.15 d after explosion | rebin integral ratio 1.00000-1.00000
+m15mlt1   II  48 spectra, t_exp  11.72- 429.0 d, phase  -144.7 to  272.6 d | M_V(50 d) -17.68, t_PT 156.4 d, L(429 d) / 56Co decay power 1.00 | rebin integral ratio 1.00001-1.00006
+m15mlt3   II  47 spectra, t_exp  11.10- 422.1 d, phase  -136.9 to  274.1 d | M_V(50 d) -16.95, t_PT 148.0 d, L(422 d) / 56Co decay power 1.07 | rebin integral ratio 1.00001-1.00006
+m15z2m2   II  45 spectra, t_exp  10.75- 389.7 d, phase  -125.3 to  253.7 d | M_V(50 d) -17.31, t_PT 136.0 d, L(390 d) / 56Co decay power 0.91 | rebin integral ratio 1.00001-1.00008
+m15z2m3   II  44 spectra, t_exp  11.03- 350.9 d, phase  -141.1 to  198.8 d | M_V(50 d) -16.87, t_PT 152.1 d, L(351 d) / 56Co decay power 1.27 | rebin integral ratio 1.00002-1.00010
+m15z4m2   II  44 spectra, t_exp  13.18- 389.4 d, phase  -121.1 to  255.1 d | M_V(50 d) -17.48, t_PT 134.3 d, L(389 d) / 56Co decay power 0.86 | rebin integral ratio 1.00001-1.00006
+m15z8m3   II  43 spectra, t_exp  10.82- 384.6 d, phase  -125.2 to  248.6 d | M_V(50 d) -17.01, t_PT 136.0 d, L(385 d) / 56Co decay power 1.09 | rebin integral ratio 1.00001-1.00006

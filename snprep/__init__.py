@@ -3,4 +3,5 @@
 See data/README.md. Entry points: scripts/download_data.py, scripts/build_dataset.py,
 scripts/validate_dataset.py; reading: snprep.load.SNDataset.
 Black-body test series (paper Fig. 2): scripts/build_blackbody.py, snprep.load.BBDataset.
+CMFGEN model spectra (paper Sect. 4): scripts/download_models.py, scripts/build_models.py, snprep.load.ModelDataset.
 """

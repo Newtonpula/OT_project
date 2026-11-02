@@ -9,6 +9,9 @@
 
     bb = BBDataset()                                  # black-body test series (paper Fig. 2)
     m = bb.ot_measures('paper')                       # same keys; t = temperature [K]
+
+    md = ModelDataset()                               # CMFGEN model spectra (paper Sect. 4, Figs. 3-5)
+    m = md.ot_measures('DDC15', phase_range=(-5, 30)) # same keys; t = days from V max (Ia) or t_PT (II)
 """
 import os
 
@@ -18,6 +21,7 @@ import numpy as np
 PROCESSED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'processed')
 DEFAULT = os.path.join(PROCESSED, 'sn_spectra_ot.h5')
 BB_DEFAULT = os.path.join(PROCESSED, 'blackbody_spectra_ot.h5')
+MODEL_DEFAULT = os.path.join(PROCESSED, 'model_spectra_ot.h5')
 
 
 class SNDataset:
@@ -132,3 +136,52 @@ class BBDataset:
         mass = sp['flux'][:, cols] * np.diff(self.edges)[cols]
         return dict(wave=self.wave[cols], mass=mass, total=mass.sum(1), t=sp['temperature'],
                     T=sp['temperature'], alpha=sp['alpha'], window=(lo, hi))
+
+
+class ModelDataset:
+    """Reader for data/processed/model_spectra_ot.h5 (scripts/build_models.py).
+
+    CMFGEN models of the paper's Sect. 4 tests: SNe Ia (Dessart+2014) and SNe II (Dessart+2013), every spectrum
+    on one grid at 10 pc; mag and F_band are the synthetic photometry that the paper rescales against.
+    """
+
+    def __init__(self, path=MODEL_DEFAULT):
+        self.path = path
+        with h5py.File(path, 'r') as h:
+            self.wave = h['wave_rest'][:]
+            self.edges = h['wave_edges'][:]
+            self.bands = h.attrs['bands'].split(',')     # column order of mag and F_band
+            self._info = {n: dict(g.attrs) for n, g in h['models'].items()}
+
+    def names(self, sn_type=None):
+        return [n for n, a in self._info.items() if sn_type is None or a['type'] == sn_type]
+
+    def info(self, name):
+        return self._info[name]
+
+    def spectra(self, name):
+        with h5py.File(self.path, 'r') as h:
+            s = h['models'][name]['spectra']
+            out = {k: s[k][:] for k in s}
+        out['filename'] = np.array([x.decode() if isinstance(x, bytes) else x for x in out['filename']])
+        out['wave'] = self.wave
+        return out
+
+    def ot_measures(self, name, window=None, phase_range=None):
+        """Model spectra as discrete measures, same keys as SNDataset.ot_measures.
+
+        window       None (full 1500-10000 A grid) or (lo, hi) in A; (3000, 10000) gives the SN grid
+        phase_range  None or (lo, hi) in days from t_ref; the paper's Fig. 3 covers (-5, 30) for SNe Ia
+                     and (-120, 0) for SNe II
+        returns dict(wave, mass[N, L] in erg/s/cm2 at 10 pc per 5 A bin, total = mass.sum(1),
+        t = phase (days from V max for Ia, from t_PT for II), t_exp (days since explosion),
+        F_band[N, n_bands], mag[N, n_bands])
+        """
+        sp = self.spectra(name)
+        lo, hi = self._info[name]['window_rest'] if window is None else window
+        cols = (self.edges[:-1] >= lo) & (self.edges[1:] <= hi)
+        rows = np.ones(len(sp['phase']), bool) if phase_range is None else \
+            (sp['phase'] >= phase_range[0]) & (sp['phase'] <= phase_range[1])
+        mass = sp['flux'][rows][:, cols] * np.diff(self.edges)[cols]
+        return dict(wave=self.wave[cols], mass=mass, total=mass.sum(1), t=sp['phase'][rows], t_exp=sp['t_exp'][rows],
+                    F_band=sp['F_band'][rows], mag=sp['mag'][rows], window=(lo, hi))

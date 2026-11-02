@@ -1,13 +1,15 @@
 # Datasets for unbalanced-OT interpolation of spectra
 
-Two datasets for reproducing Ramirez et al. 2024 (A&A, arXiv:2409.10701) with (unbalanced) optimal transport:
+Three datasets for reproducing Ramirez et al. 2024 (A&A, arXiv:2409.10701) with (unbalanced) optimal transport:
 
 1. **Black-body test series** (paper §3, Fig. 2): Planck spectra from 5000 K to 10000 K, the paper's first
    test of OT interpolation.
-2. **SN spectral time series**: the paper's observational sample of 141 supernovae, flux-calibrated against
+2. **Model spectra** (paper §4.1, Figs. 3–5): noiseless CMFGEN spectral time series of 16 SN Ia and 6 SN II
+   explosion models (Dessart et al. 2014, 2013), used by the paper to test the interpolation.
+3. **SN spectral time series**: the paper's observational sample of 141 supernovae, flux-calibrated against
    photometry.
 
-Both use the same form: 5 Å wavelength bins, `flux` as a density per Å, mass per bin = flux × 5 Å, and a
+All three use the same form: 5 Å wavelength bins, `flux` as a density per Å, mass per bin = flux × 5 Å, and a
 reader in `snprep.load` whose `ot_measures()` returns `wave`, `mass`, `total` and `t`.
 
 ## Building the .h5 files locally
@@ -18,7 +20,7 @@ After cloning, generate them on your own machine. Run every command from the rep
 (the `OT_project/` folder).
 
 **1. Python environment** (tested with Python 3.14). The black-body series needs only numpy, h5py and
-matplotlib; the SN dataset also needs the rest.
+matplotlib; the model spectra also need scipy and requests; the SN dataset needs all of them.
 
 ```bash
 python3 -m venv .venv
@@ -40,7 +42,20 @@ This writes `data/processed/blackbody_spectra_ot.h5` (about 2.5 MB), `data/proce
 and `data/processed/validation/blackbody_series.png`. It prints its numerical checks and stops with an
 error if one fails.
 
-**3. SN dataset.** First download the raw data. This needs network access and fetches about 720 MB:
+**3. Model spectra.** Download the CMFGEN models from Zenodo (about 200 MB, a few minutes; details in
+[section 2](#2-model-spectra-paper-41-figs-35)), then build the dataset (a few seconds):
+
+```bash
+python scripts/download_models.py
+```
+```bash
+python scripts/build_models.py
+```
+
+This writes `data/processed/model_spectra_ot.h5` (about 14 MB), `summary_models.csv`,
+`summary_model_spectra.csv`, `build_models_log.txt` and `data/processed/validation/models_overview.png`.
+
+**4. SN dataset.** First download the raw data. This needs network access and fetches about 720 MB:
 the OSC JSON files from the `astrocatalogs/sne-*` GitHub repositories into `data/raw/osc/`, and the CSP
 SN II tarball into `data/raw/csp/`. Files that already exist are skipped, so the command can simply be
 run again after an interruption.
@@ -62,10 +77,10 @@ Optionally, regenerate the validation report and figures in `data/processed/vali
 python scripts/validate_dataset.py
 ```
 
-**4. Check** that both files load; this should print `['dense', 'paper'] 141`:
+**5. Check** that all three files load; this should print `['dense', 'paper'] 22 141`:
 
 ```bash
-python -c "from snprep.load import BBDataset, SNDataset; print(BBDataset().names(), len(SNDataset().names()))"
+python -c "from snprep.load import BBDataset, ModelDataset, SNDataset; print(BBDataset().names(), len(ModelDataset().names()), len(SNDataset().names()))"
 ```
 
 ## 1. Black-body test series (paper §3, Fig. 2)
@@ -138,7 +153,133 @@ attrs: flux_units, mass_units, constants
   it works on normalised histograms, so divide each spectrum by its total first. For unbalanced OT, use
   the raw masses.
 
-## 2. SN spectral time-series dataset
+## 2. Model spectra (paper §4.1, Figs. 3–5)
+
+For its first two sets of tests (Figs. 3–5), the paper uses noiseless model spectra instead of observations:
+the public CMFGEN radiative-transfer time series of Dessart et al. (2014) for SNe Ia and Dessart et al. (2013)
+for SNe II. A spectrum between two others is interpolated, rescaled against the synthetic photometry and
+compared with the true model spectrum (Eq. 4). `processed/model_spectra_ot.h5` holds these models in the
+same form as the other two datasets.
+
+### Download and build
+
+Both sets are on Zenodo under CC-BY-4.0. The author's own pages (www-n.oca.eu) were unreachable when this was
+written, so the script uses Zenodo only:
+
+| Set | Paper | Zenodo | Models | Download |
+|---|---|---|---|---|
+| SN Ia | Dessart, Blondin, Hillier & Khokhlov 2014, MNRAS 441, 532 | [10.5281/zenodo.5524943](https://doi.org/10.5281/zenodo.5524943) | 16 delayed detonations: DDC0, 6, 10, 15, 17, 20, 22, 25, DDC10_M4 (DDC10 with mixing), PDDEL1, 3, 4, 7, 9, 11, 12 | 11 MB (43 MB extracted) |
+| SN II | Dessart, Hillier, Waldman & Livne 2013, MNRAS 433, 1745 | [10.5281/zenodo.5524916](https://doi.org/10.5281/zenodo.5524916) | 6 explosions of 15 M☉ red supergiants: m15mlt1, m15mlt3, m15z2m2, m15z2m3, m15z4m2, m15z8m3 | 190 MB (0.9 GB extracted) |
+
+From the repository root:
+
+```bash
+python scripts/download_models.py
+```
+```bash
+python scripts/build_models.py
+```
+
+The first command reads the file list of both Zenodo records, downloads the archives into
+`data/raw/models/dessart14_snia/` and `data/raw/models/dessart13_snii/`, checks their MD5 sums and extracts
+them; archives that are already present and intact are skipped. The second command reads the raw files,
+puts every spectrum on the common grid and writes the files listed below. Both scripts are needed only once.
+
+Raw files, in case you want to read them directly:
+
+- **SN Ia:** `SNIa_DDC_DDC10M4_PDDEL_D14b/<model>_spec_1500_10000_interp5_<t>d.dat`, where t is days since
+  explosion. Two columns: wavelength [Å] and f_λ [erg s⁻¹ cm⁻² Å⁻¹ at 10 pc], every 5 Å over 1500–10000 Å.
+  The archive also has a `README` and the hydrodynamical inputs (`*_SN_HYDRO_DATA_*`).
+- **SN II:** `<model>/<prefix>_<k>.fl` and `<prefix>_<k>nt.fl`, at native resolution over 17 Å–76 µm. Two
+  columns: wavelength [Å] and f_λ at 1 kpc. `<prefix>_list` maps each file to days since explosion. Eight
+  `.fl` files have no entry there and are skipped (listed in `build_models_log.txt`).
+
+### Quick start
+
+```python
+import numpy as np
+from snprep.load import ModelDataset
+from snprep.synphot import Filters
+
+md = ModelDataset()                                  # reads data/processed/model_spectra_ot.h5
+md.names('Ia'), md.names('II')                       # 16 SN Ia models, 6 SN II models
+m = md.ot_measures('DDC15', window=(3000, 10000), phase_range=(-5, 30))
+m['wave'], m['mass'], m['total']                     # (1400,), (12, 1400), (12,): exactly the SN grid
+m['t'], m['t_exp']                                   # days from V maximum (t_PT for SNe II); days since explosion
+m['F_band'], m['mag']                                # (12, 7) synthetic photometry in md.bands = B,V,R,I,g,r,i
+
+# the paper's single-pair test (Sect. 4.1, Fig. 3) for spectra at ph1 < ph2 < ph3
+filt = Filters('data/meta/filters')
+f = m['mass'] / 5.0                                  # f_lambda [erg s^-1 cm^-2 A^-1 at 10 pc]
+k1, k2, k3 = 4, 5, 6
+alpha = (m['t'][k2] - m['t'][k1]) / (m['t'][k3] - m['t'][k1])
+f_interp = (1 - alpha) * f[k1] + alpha * f[k3]       # linear interpolation; replace with the OT barycenter
+F_syn = np.array([filt.synflux(m['wave'], f_interp, b)[0] for b in md.bands])
+K = F_syn / m['F_band'][k2]                          # paper Eqs. 1-2, against the photometry at ph2
+f_resc = f_interp / np.median(K)                     # MAD(K)/median(K) is the calibration error
+eps = np.mean(np.abs(f[k2] - f_resc) / f[k2])        # paper Eq. 4; 0.025 here (alpha = 0.48, gap 5.2 d)
+```
+
+### Files
+
+| File | Contents |
+|---|---|
+| `processed/model_spectra_ot.h5` | **Model dataset** (about 14 MB; not in git, build it locally) |
+| `processed/summary_models.csv` | One row per model: epochs, t_ref and how it was found, phase range, peak M_V, M_V at 50 d, M(⁵⁶Ni) for SNe II |
+| `processed/summary_model_spectra.csv` | One row per spectrum: t_exp, phase, totals, synthetic magnitudes |
+| `processed/build_models_log.txt` | Per-model checks, Olivares fits of the SNe II, skipped raw files |
+| `processed/validation/models_overview.png` | V light curves with the phase zero points, and two spectral sequences |
+| `raw/models/` | Zenodo archives and extracted files (about 1 GB; not in git) |
+
+Code: `scripts/download_models.py`, `scripts/build_models.py`, `snprep/models.py` (raw readers, phase
+references).
+
+### HDF5 layout
+
+```
+/wave_rest (1700,)  /wave_edges (1701,)     1500–10000 Å, 5 Å bins (edges line up with the SN grid)
+attrs: bands = "B,V,R,I,g,r,i"   ← column order of mag and F_band;  flux_units, mass_units, mag_system
+/models/<name>/
+    attrs: type (Ia/II), reference, doi, raw_dir, raw_prefix, t_ref, t_ref_method, window_rest = (1500, 10000)
+           SNe II also: Z, R_star_Rsun, E_kin_1e51erg, M_Ni56_Msun   (Dessart et al. 2013, Table 1)
+    spectra/  (N spectra, sorted by time)
+        t_exp (N,)          days since explosion
+        phase (N,)          t_exp − t_ref: days from V maximum (Ia) or from t_PT (II)
+        flux (N,1700)       f_λ at 10 pc [erg s⁻¹ cm⁻² Å⁻¹], averaged over each bin
+        mass_window (N,)    ∫f dλ over the grid [erg s⁻¹ cm⁻²]
+        mass_full (N,)      ∫f dλ over the whole model spectrum (SNe II: 17 Å–76 µm, nearly bolometric)
+        F_band (N,7)        synthetic photometry: photon-weighted mean f_λ in each band
+        mag (N,7)           the same as absolute magnitudes (Vega for BVRI, AB for gri)
+        filename, rebin_int_ratio
+```
+
+### Notes
+
+- **Units.** The SN Ia files are f_λ at 10 pc (stated in the archive README). The SN II files have no README.
+  They are f_λ at 1 kpc, the CMFGEN convention, and are multiplied by 10⁴ to bring them to 10 pc as well.
+  As a check, the nebular-phase luminosity of every SN II model is 0.86–1.27× the ⁵⁶Co decay power for its
+  ⁵⁶Ni mass in Dessart et al. 2013 (Table 1). Peak M_V of the SN Ia models runs from −17.8 (DDC25) to −19.7
+  (DDC0); M_V at 50 d of the SN II models runs from −16.9 to −17.7. Total masses range from about 0.05 to
+  1500 erg s⁻¹ cm⁻², so divide by a constant before running Sinkhorn, as for the SN data.
+- **Phases** follow the paper (§4). SNe Ia are referred to V maximum, from a second-order polynomial within
+  ±5 d of the brightest epoch (19.7–23.4 d after explosion). SNe II are referred to t_PT, the midpoint of the
+  plateau-to-tail transition, from an Olivares et al. (2010) fit to the V light curve (134–156 d after
+  explosion; Dessart et al. 2013 quote plateaus of 120–150 d).
+- **Which models.** The paper does not list the models it used. The colour scales of its Fig. 3 cover phases
+  −5 to 30 d (SNe Ia) and −120 to 0 d (SNe II); `phase_range` selects such a range. Zenodo holds 6 of the
+  SN II models in Table 1 of Dessart et al. 2013: all 15 M☉ progenitors, differing in radius (mixing
+  length) and metallicity.
+- **Photometry.** The paper's Johnson–Cousins and Sloan bands are BVRI and gri here, with the same filter
+  curves and zero points as the SN dataset (`snprep.synphot`). The photometry is computed on the gridded
+  spectra, so a stored spectrum has K̃ = 1 exactly against its own `F_band`.
+- **Grid.** 1500–10000 Å is the full range of the SN Ia files. The SN II spectra extend further and are cut
+  to the same range (`mass_full` keeps their total). The SN II flux below 3000 Å falls to as little as 10⁻⁴
+  of the optical peak, and such bins dominate the relative residuals of Eq. 4, so compute ε in a window
+  such as `window=(3000, 10000)`, which selects exactly the SN grid.
+- **Checks** (run on every build). All fluxes are finite and non-negative, the integral over the grid
+  matches the native spectrum to within 1e-4, and every phase reference lies in the expected range.
+
+## 3. SN spectral time-series dataset
 
 This is a rebuild of the observational sample used by Ramirez et al. 2024 (A&A, arXiv:2409.10701):
 **141 supernovae (110 Ia + 31 II, i.e. the paper's Table C.1)**. The data come from the Open Supernova
@@ -315,8 +456,6 @@ attrs: bands = "B,V,R,I,g,r,i,b_uvot,v_uvot"   ← column order of every per-ban
   too sparse to calibrate most epochs.
 - SN2002gw has 6 golden spectra (9 in the paper) and SN2003T has 2 (3 in the paper).
 - t_PT could not be measured reliably for 9 SNe II; their `phase` is NaN, so use MJD for interpolation.
-- The Dessart+2013/2014 model spectra of the paper's §4.1 (used for method tests) are not included:
-  neither the Zenodo API nor the author's website was reachable from the network used here.
 - The I and g bands have the largest calibration scatter (natural systems do not match the standard
   filter curves; the paper sees the same). The golden criterion uses the median over all bands, so the
   impact is limited.
