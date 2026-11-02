@@ -6,14 +6,18 @@
     m = ds.ot_measures('SN2011fe')                    # unbalanced-OT input
     m['wave'], m['mass'], m['t'], m['total']          # (L,), (N, L), (N,), (N,)
     lc = ds.total_flux_curve('SN2011fe')              # daily total flux from photometry
+
+    bb = BBDataset()                                  # black-body test series (paper Fig. 2)
+    m = bb.ot_measures('paper')                       # same keys; t = temperature [K]
 """
 import os
 
 import h5py
 import numpy as np
 
-DEFAULT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                       'data', 'processed', 'sn_spectra_ot.h5')
+PROCESSED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'processed')
+DEFAULT = os.path.join(PROCESSED, 'sn_spectra_ot.h5')
+BB_DEFAULT = os.path.join(PROCESSED, 'blackbody_spectra_ot.h5')
 
 
 class SNDataset:
@@ -86,3 +90,45 @@ class SNDataset:
         for k in ('band', 'system', 'source'):
             out[k] = np.array([x.decode() if isinstance(x, bytes) else x for x in out[k]])
         return out
+
+
+class BBDataset:
+    """Reader for data/processed/blackbody_spectra_ot.h5 (scripts/build_blackbody.py).
+
+    Series 'paper' (the 10 curves of the paper's Fig. 2) and 'dense' (50 K steps); temperature plays
+    the role of time, alpha = (T - 5000) / 5000 is the barycenter weight between the 5000 K and 10000 K ends.
+    """
+
+    def __init__(self, path=BB_DEFAULT):
+        self.path = path
+        with h5py.File(path, 'r') as h:
+            self.wave = h['wave_rest'][:]
+            self.edges = h['wave_edges'][:]
+            self._info = {n: dict(g.attrs) for n, g in h['series'].items()}
+
+    def names(self):
+        return list(self._info)
+
+    def info(self, name):
+        return self._info[name]
+
+    def spectra(self, name):
+        with h5py.File(self.path, 'r') as h:
+            s = h['series'][name]['spectra']
+            out = {k: s[k][:] for k in s}
+        out['wave'] = self.wave
+        return out
+
+    def ot_measures(self, name, window=None):
+        """Black bodies as discrete measures, same keys as SNDataset.ot_measures.
+
+        window      None (full 1000-15000 A grid) or (lo, hi) in A; (3000, 10000) gives the SN grid
+        returns dict(wave, mass[N, L] in erg/s/cm2/sr per 5 A bin, total = mass.sum(1),
+        t = T = temperature [K], alpha)
+        """
+        sp = self.spectra(name)
+        lo, hi = self._info[name]['window_rest'] if window is None else window
+        cols = (self.edges[:-1] >= lo) & (self.edges[1:] <= hi)
+        mass = sp['flux'][:, cols] * np.diff(self.edges)[cols]
+        return dict(wave=self.wave[cols], mass=mass, total=mass.sum(1), t=sp['temperature'],
+                    T=sp['temperature'], alpha=sp['alpha'], window=(lo, hi))

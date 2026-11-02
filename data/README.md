@@ -1,4 +1,144 @@
-# SN spectral time-series dataset (for unbalanced-OT interpolation)
+# Datasets for unbalanced-OT interpolation of spectra
+
+Two datasets for reproducing Ramirez et al. 2024 (A&A, arXiv:2409.10701) with (unbalanced) optimal transport:
+
+1. **Black-body test series** (paper §3, Fig. 2): Planck spectra from 5000 K to 10000 K, the paper's first
+   test of OT interpolation.
+2. **SN spectral time series**: the paper's observational sample of 141 supernovae, flux-calibrated against
+   photometry.
+
+Both use the same form: 5 Å wavelength bins, `flux` as a density per Å, mass per bin = flux × 5 Å, and a
+reader in `snprep.load` whose `ot_measures()` returns `wave`, `mass`, `total` and `t`.
+
+## Building the .h5 files locally
+
+The HDF5 files are **not in the git repository** (`data/processed/*.h5` is listed in `.gitignore`; the SN
+file is 131 MB, above GitHub's 100 MB file limit), and neither are the raw downloads in `data/raw/`.
+After cloning, generate them on your own machine. Run every command from the repository root
+(the `OT_project/` folder).
+
+**1. Python environment** (tested with Python 3.14). The black-body series needs only numpy, h5py and
+matplotlib; the SN dataset also needs the rest.
+
+```bash
+python3 -m venv .venv
+```
+```bash
+source .venv/bin/activate
+```
+```bash
+pip install numpy scipy h5py matplotlib requests astropy extinction
+```
+
+**2. Black-body series.** No download; takes about a second.
+
+```bash
+python scripts/build_blackbody.py
+```
+
+This writes `data/processed/blackbody_spectra_ot.h5` (about 2.5 MB), `data/processed/summary_blackbody.csv`
+and `data/processed/validation/blackbody_series.png`. It prints its numerical checks and stops with an
+error if one fails.
+
+**3. SN dataset.** First download the raw data. This needs network access and fetches about 720 MB:
+the OSC JSON files from the `astrocatalogs/sne-*` GitHub repositories into `data/raw/osc/`, and the CSP
+SN II tarball into `data/raw/csp/`. Files that already exist are skipped, so the command can simply be
+run again after an interruption.
+
+```bash
+python scripts/download_data.py
+```
+
+Then build the dataset (about 20 s for all 141 SNe). This writes `data/processed/sn_spectra_ot.h5`
+(about 131 MB), `summary_sne.csv`, `summary_spectra.csv` and `build_log.txt`.
+
+```bash
+python scripts/build_dataset.py
+```
+
+Optionally, regenerate the validation report and figures in `data/processed/validation/` (about 1 minute):
+
+```bash
+python scripts/validate_dataset.py
+```
+
+**4. Check** that both files load; this should print `['dense', 'paper'] 141`:
+
+```bash
+python -c "from snprep.load import BBDataset, SNDataset; print(BBDataset().names(), len(SNDataset().names()))"
+```
+
+## 1. Black-body test series (paper §3, Fig. 2)
+
+Before using real SNe, the paper tests OT on Planck spectra: it interpolates between black bodies at 5000 K
+and 10000 K and compares the Wasserstein and L2 paths with the true intermediate black bodies.
+`processed/blackbody_spectra_ot.h5` holds those spectra in the same form as the SN data.
+
+### Quick start
+
+```python
+from snprep.load import BBDataset
+
+bb = BBDataset()                                    # reads data/processed/blackbody_spectra_ot.h5
+m = bb.ot_measures('paper')                         # 10 spectra, full 1000–15000 Å grid
+m['wave'], m['mass'], m['total']                    # (2800,), (10, 2800), (10,)
+m['T'], m['alpha']                                  # temperature [K]; alpha = (T − 5000)/5000 (also in m['t'])
+g = bb.ot_measures('dense', window=(3000, 10000))   # 101 spectra on exactly the SN grid (wave_rest of sn_spectra_ot.h5)
+```
+
+### Files
+
+| File | Contents |
+|---|---|
+| `processed/blackbody_spectra_ot.h5` | B_λ(T) for 5000–10000 K (about 2.5 MB; not in git, build it locally) |
+| `processed/summary_blackbody.csv` | One row per spectrum: T, α, Wien peak, totals |
+| `processed/validation/blackbody_series.png` | The curves of the paper's Fig. 2, drawn from the file |
+
+Code: `scripts/build_blackbody.py` (build and checks), `snprep/blackbody.py` (Planck functions, usable for
+any temperature).
+
+### HDF5 layout
+
+```
+/wave_rest (2800,)  /wave_edges (2801,)     1000–15000 Å, 5 Å bins
+attrs: flux_units, mass_units, constants
+/series/<paper|dense>/
+    attrs: description, window_rest = (1000, 15000)
+    spectra/  (N spectra, sorted by temperature)
+        temperature (N,)    [K]
+        alpha (N,)          (T − 5000)/5000, the barycenter weight between the two ends
+        flux (N,2800)       B_λ averaged over each bin [erg s⁻¹ cm⁻² Å⁻¹ sr⁻¹]
+        mass_window (N,)    ∫B_λ dλ over the grid [erg s⁻¹ cm⁻² sr⁻¹]
+        mass_full (N,)      ∫B_λ dλ over all wavelengths = σT⁴/π
+        peak_wave, peak_flux  Wien peak [Å] and B_λ there
+```
+
+### Notes
+
+- **Quantity.** `flux` is the spectral radiance B_λ in erg s⁻¹ cm⁻² Å⁻¹ sr⁻¹, the unit of the paper's
+  Fig. 2, averaged over each bin (Gauss–Legendre quadrature, so `mass` is the exact integral over the bin).
+  It is computed with exact SI-2019 constants. Mass is in erg s⁻¹ cm⁻² sr⁻¹; the 10000 K peak is 4.10×10⁷,
+  as on the paper's axis.
+- **Grid.** 1000–15000 Å with 5 Å bins (2800 bins), the range plotted in Fig. 2. The edges line up with
+  the SN grid, so `window=(3000, 10000)` selects exactly the 1400 SN bins. The 10000 K peak (2898 Å)
+  lies outside that window.
+- **Series.**
+  - `paper`: `np.linspace(5000, 10000, 10)`, the ten black curves of Fig. 2. The paper does not state
+    them; they were read off the peak heights (4.1, 3.1, 2.3, 1.6, 1.2, … ×10⁷). Round 500 K steps would
+    give 3.2, 2.4, 1.8, … instead.
+  - `dense`: 50 K steps (101 spectra), ground truth for any intermediate α.
+  - The endpoints of both series are the same two spectra.
+- **Unbalanced.** The total mass grows about 19× from 5000 K to 10000 K over the grid; over all
+  wavelengths it grows 16×, since it is ∝ T⁴. The grid holds 83% (5000 K) to 97% (10000 K) of the
+  total `mass_full` = σT⁴/π, because the red tail of the cool spectra extends beyond 15000 Å.
+- **Checks** (run on every build). The window integral agrees with the analytic band integral of the
+  Planck function to 1e-15, and every bin agrees to 2e-11. The brightest bin always contains the Wien
+  peak.
+- **Paper setup of the OT test.** The paper calls `ot.bregman.barycenter` with the weights [1−α, α];
+  it works on normalised histograms, so divide each spectrum by its total first. For unbalanced OT, use
+  the raw masses.
+
+## 2. SN spectral time-series dataset
 
 This is a rebuild of the observational sample used by Ramirez et al. 2024 (A&A, arXiv:2409.10701):
 **141 supernovae (110 Ia + 31 II, i.e. the paper's Table C.1)**. The data come from the Open Supernova
@@ -8,7 +148,7 @@ grid, and come with the **total flux (mass) at every epoch**.
 The spectra are not normalised, so the integral of the spectrum can differ from epoch to epoch, which
 is exactly the setting of unbalanced OT, where the measures have unequal masses.
 
-## Quick start
+### Quick start
 
 ```python
 import sys; sys.path.insert(0, '/path/to/OT_project')  # the folder you cloned; can be skipped if you start Python in that folder
@@ -35,11 +175,11 @@ features by roughly `sqrt(reg) × window width`; the median window width is 3755
 corresponds to about 120 Å of broadening. For small reg use log-domain iterations
 (`uot_barycenter` in `scripts/validate_dataset.py` is a ready-to-run implementation).
 
-## Files
+### Files
 
 | File | Contents |
 |---|---|
-| `processed/sn_spectra_ot.h5` | **Main dataset** (about 128 MB) |
+| `processed/sn_spectra_ot.h5` | **Main dataset** (about 131 MB; not in git, build it locally) |
 | `processed/summary_sne.csv` | One row per SN: z, t_ref, spectrum counts, comparison with the paper, common window |
 | `processed/summary_spectra.csv` | One row per input spectrum (`origin` = OSC or CSP), including rejected ones, with the metrics behind each rejection |
 | `processed/build_log.txt` | Rejected photometry sources, how t_ref was determined, etc. |
@@ -49,19 +189,7 @@ corresponds to about 120 Å of broadening. For small reg use log-domain iteratio
 | `meta/paper_table_C1.csv` | The paper's Table C.1: sample list, number of spectra, phase range, photometric bands |
 | `meta/filters/` | Filter curves (Bessell BVRI, SDSS gri, Swift UVOT b/v) and the CALSPEC Vega spectrum |
 
-To regenerate, run from the repo root (about 20 s for all 141 SNe; validation takes about 1 minute):
-
-```bash
-python scripts/download_data.py
-```
-```bash
-python scripts/build_dataset.py
-```
-```bash
-python scripts/validate_dataset.py
-```
-
-## HDF5 layout
+### HDF5 layout
 
 ```
 /wave_rest (1400,)  /wave_edges (1401,)     3000–10000 Å rest frame, 5 Å bins
@@ -93,7 +221,7 @@ attrs: bands = "B,V,R,I,g,r,i,b_uvot,v_uvot"   ← column order of every per-ban
                   mass_template, mass_template_err, mass_sed, dt_nearest_spec
 ```
 
-## Processing pipeline
+### Processing pipeline
 
 1. **Download.** The OSC website is offline, so the backup in the `astrocatalogs/sne-*` repositories
    on GitHub is used. All 141 SNe of the paper were found.
@@ -161,7 +289,7 @@ attrs: bands = "B,V,R,I,g,r,i,b_uvot,v_uvot"   ← column order of every per-ban
    - `mass_sed`: photometry only, a trapezoidal integral of the band fluxes placed at their effective
      wavelengths.
 
-## Validation results (details in `processed/validation/validation_report.md`)
+### Validation results (details in `processed/validation/validation_report.md`)
 
 - Sample: SNe Ia have 2109 golden / 1853 OT-ready spectra (paper golden: 1714); SNe II have 441 / 361
   (paper: 298). With the CSP spectra added, the golden phase range of SN1986L, [−106.7, −74.0], matches
@@ -181,7 +309,7 @@ attrs: bands = "B,V,R,I,g,r,i,b_uvot,v_uvot"   ← column order of every per-ban
   or negative values. Its parameters were not tuned, so the results say nothing about how good the
   method is.
 
-## Known limitations
+### Known limitations
 
 - SN2007il has only 2 golden spectra (5 in the paper). It has 23 input spectra, but the photometry is
   too sparse to calibrate most epochs.
