@@ -1,0 +1,34 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{hyperref}
+
+\title{Unbalanced OT for Time Series of Spectral Data}
+\author{Yixiao, Sara, Qi}
+
+\begin{document}
+\maketitle
+
+\section{Problem formulation}
+Given a discrete time series of spectral functions of length $N+1$, each also discrete in spectrum with $J$ bins, i.e.
+\begin{equation}
+    \bigg\{ \Big\{f(t_i,\lambda_j)\Big\}_{j=1}^J\bigg\}_{i=0}^N
+\end{equation}
+
+Denoting $f_{t_i}^j = f(t_i,\lambda_j)$ the goal is to reconstruct:
+\begin{equation}
+    \hat{f}_t^j, \quad \forall t \in [t_0,t_N]
+\end{equation}
+
+There are many ways to interpolate between time series; in particular, we are interested in methods based on OT geometry. If each $f_{t_i}$ is a probability mass function (sums to 1), the problem is solved by a direct application of the Sinkhorn algorithm to identify OT maps and linearly interpolate the OT map with the identity map. However, the question is more interesting when $f_{t_i}$ are not normalized, which leads to the following questions:
+
+\section{Research Question}
+Defining the "brightness" of the spectral function at time $t_i$ to be the $\sum_{j} f_{t_i}^j$. We denote the "brightness" at time $t$ to be $F_{t_i}$. A natural question to ask is: 
+
+Does it make a difference to construct the interpolation in the following ways:
+\begin{enumerate}
+    \item Normalize $f_{t_{i-1}}$ and $f_{t_{i+1}}$ by $F_{t_{i-1}}$ and $F_{t_{i+1}}$, perform a regular OT barycenter then rescaling the result by $F_{t_i}$
+    \item Find unbalanced OT barycenter between unnormalized end point conditioned on the barycenter having brightness $F_{t_i}$.
+\end{enumerate}
+
+How should we model the cost for moving/adding/removing probability mass? Under what condition/choices is method 1 equivalent to method 2? Under what data assumption would we expect one to outperform the other?
+\end{document}
