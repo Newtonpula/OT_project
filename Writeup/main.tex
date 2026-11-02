@@ -1,0 +1,188 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\title{Unbalanced OT for Time Series of Spectral Data}
+\author{Yixiao, Sara, Qi}
+
+\begin{document}
+\maketitle
+
+\section{Problem formulation}
+Given a discrete time series of spectral functions of length $N+1$, each also discrete in spectrum with $J$ bins, i.e.
+\begin{equation}
+    \bigg\{ \Big\{f(t_i,\lambda_j)\Big\}_{j=1}^J\bigg\}_{i=0}^N
+\end{equation}
+
+Denoting $f_{t_i}^j = f(t_i,\lambda_j)$ the goal is to reconstruct:
+\begin{equation}
+    \hat{f}_t^j, \quad \forall t \in [t_0,t_N]
+\end{equation}
+
+There are many ways to interpolate between time series; in particular, we are interested in methods based on OT geometry. If each $f_{t_i}$ is a probability mass function (sums to 1), the problem is solved by a direct application of the Sinkhorn algorithm to identify OT maps and linearly interpolate the OT map with the identity map. However, the question is more interesting when $f_{t_i}$ are not normalized, which leads to the following questions:
+
+\section{Research Question}
+Defining the "brightness" of the spectral function at time $t_i$ to be the $\sum_{j} f_{t_i}^j$. We denote the "brightness" at time $t$ to be $F_{t_i}$. A natural question to ask is: 
+
+Does it make a difference to construct the interpolation in the following ways:
+\begin{enumerate}
+    \item Normalize $f_{t_{i-1}}$ and $f_{t_{i+1}}$ by $F_{t_{i-1}}$ and $F_{t_{i+1}}$, perform a regular OT barycenter then rescaling the result by $F_{t_i}$
+    \item Find unbalanced OT barycenter between unnormalized end points conditioned on the barycenter having brightness $F_{t_i}$.
+\end{enumerate}
+
+How should we model the cost for moving/adding/removing probability mass? Under what condition/choices is method 1 equivalent to method 2? Under what data assumption would we expect one to outperform the other?
+
+\section{Preliminaries}
+\subsection{Motivation}
+In general, the two methods will yield different results. The special case where the two methods coincide is when the evolution of the spectrum can be obtained by separation of variables. (see \cref{app:equivalence}). 
+
+We would like to understand under what settings the second method outperforms the other and what is the appropriate algorithm for solving the second method computationally?
+
+\subsection{Data}
+
+We consider two publicly available datasets of synthetic supernova spectra generated using radiative-transfer simulations. The first dataset consists of Type Ia supernova models from Dessart et al.~\cite{dessart2014}, including delayed-detonation (DDC) and pulsational-delayed-detonation (PDDEL) explosion models. The second dataset consists of Type II-Plateau supernova models from Dessart et al.~\cite{dessart2013}, which explore the dependence of supernova radiation on progenitor and explosion properties. Both datasets provide time-dependent spectra describing the evolution of supernovae across multiple epochs. These synthetic spectra were also used by Ramirez et al.~\cite{ramirez2024} to evaluate Wasserstein-based spectral interpolation. Since the intermediate spectra are available from the simulations, they provide a controlled setting for evaluating interpolation accuracy.
+
+Using our notation, each simulated supernova model provides a discrete time series
+\[
+\left\{f_{t_i}\right\}_{i=0}^N,
+\qquad
+f_{t_i}=(f_{t_i}^1,\ldots,f_{t_i}^J)\in\mathbb R_+^J,
+\]
+where $f_{t_i}^j$ denotes the spectral intensity at wavelength $\lambda_j$ and time $t_i$. We represent the spectra on a common wavelength grid and define their total brightness by
+\[
+F_{t_i}=\sum_{j=1}^J f_{t_i}^j,
+\]
+where the spectral values are taken to represent integrated intensity per wavelength bin.
+
+To evaluate the two interpolation methods, we select three observation times $t_{i-1}<t_i<t_{i+1}$ and withhold the intermediate spectrum $f_{t_i}$. Given the endpoint spectra $f_{t_{i-1}}$ and $f_{t_{i+1}}$, we reconstruct $\hat f_{t_i}$ using the interpolation parameter
+\[
+\alpha=\frac{t_i-t_{i-1}}{t_{i+1}-t_{i-1}}.
+\]
+For Method 1, we normalize the endpoint spectra, compute their balanced Wasserstein barycenter, and rescale it to the prescribed brightness $F_{t_i}$. For Method 2, we compute an unbalanced OT barycenter directly from the unnormalized endpoint spectra, subject to the constraint that its total brightness equals $F_{t_i}$.
+
+In both methods, we prescribe the true intermediate brightness obtained from the synthetic data. This allows us to isolate the effect of the transport geometry from errors in brightness estimation. We compare the resulting reconstructions $\hat f_{t_i}$ against the withheld ground truth $f_{t_i}$ to investigate under which spectral evolution regimes unbalanced OT provides an improvement over normalized OT.
+
+\newpage
+\appendix
+
+\section{Equivalence of Normalized and Unbalanced OT}
+\label{app:equivalence}
+
+Let $f_0,f_1\in\mathbb{R}_+^J$ be two spectra with
+total brightness
+\[
+F_0=\sum_{j=1}^J f_0^j,
+\qquad
+F_1=\sum_{j=1}^J f_1^j.
+\]
+Define their normalized spectra by
+\[
+\rho_0=\frac{f_0}{F_0},
+\qquad
+\rho_1=\frac{f_1}{F_1}.
+\]
+Suppose the desired brightness at an intermediate time is
+$F>0$, and let $\alpha\in[0,1]$ denote the interpolation
+parameter.
+
+\subsection{Exact Equivalence under Separable Geometry}
+
+Method 1 computes the normalized Wasserstein barycenter
+\begin{equation}
+\rho_\alpha^*
+=
+\arg\min_{\rho\in\mathcal P(\Lambda)}
+\left\{
+(1-\alpha)W_2^2(\rho_0,\rho)
++
+\alpha W_2^2(\rho_1,\rho)
+\right\},
+\end{equation}
+and rescales it to the prescribed brightness:
+\begin{equation}
+f_\alpha^{(1)}=F\rho_\alpha^*.
+\end{equation}
+
+Method 2 computes a brightness-constrained barycenter
+using an unbalanced transport discrepancy $\mathcal D$:
+\begin{equation}
+f_\alpha^{(2)}
+=
+\arg\min_{\substack{f\geq 0\\ \sum_j f^j=F}}
+\left\{
+(1-\alpha)\mathcal D(f_0,f)
++
+\alpha\mathcal D(f_1,f)
+\right\}.
+\end{equation}
+
+\paragraph{Proposition (Exact equivalence).}
+Suppose the discrepancy admits the decomposition
+\begin{equation}
+\boxed{
+\mathcal D(A\rho,B\eta)
+=
+c\,W_2^2(\rho,\eta)
++
+\gamma\,d_M^2(A,B),
+}
+\end{equation}
+where $A,B>0$, $\rho,\eta\in\mathcal P(\Lambda)$,
+$c>0$ and $\gamma>0$ are constants independent of
+$A,B,\rho,\eta$, and $d_M$ is a distance between
+nonnegative scalar masses.
+
+Then, for every prescribed intermediate brightness $F>0$,
+the two methods coincide:
+\begin{equation}
+\boxed{
+f_\alpha^{(1)}=f_\alpha^{(2)}.
+}
+\end{equation}
+If the balanced barycenter is not unique, this equality
+is understood as equality of the sets of minimizers.
+
+\paragraph{Proof.}
+Because the intermediate brightness is fixed, every
+admissible spectrum can be expressed as
+\[
+f=F\rho,
+\qquad
+\rho\in\mathcal P(\Lambda).
+\]
+Substituting the assumed decomposition into Method 2 gives
+\begin{align}
+\min_{\rho\in\mathcal P(\Lambda)}
+\Big\{
+&(1-\alpha)cW_2^2(\rho_0,\rho)
++\alpha cW_2^2(\rho_1,\rho)
+\nonumber\\
+&+(1-\alpha)\gamma d_M^2(F_0,F)
++\alpha\gamma d_M^2(F_1,F)
+\Big\}.
+\end{align}
+Since $F$, $F_0$, and $F_1$ are fixed, the last two terms
+are independent of $\rho$. Hence the minimization reduces to
+\begin{equation}
+\arg\min_{\rho\in\mathcal P(\Lambda)}
+\left\{
+(1-\alpha)W_2^2(\rho_0,\rho)
++
+\alpha W_2^2(\rho_1,\rho)
+\right\}.
+\end{equation}
+This is exactly the normalized Wasserstein barycenter
+in Method 1. Rescaling by $F$ proves the claim.
+\hfill$\square$
+
+\paragraph{Remark.}
+This result requires the transport cost of normalized
+spectral shapes to be independent of their total brightness.
+Such a separable discrepancy does not, in general,
+represent the same local mass creation and destruction
+mechanism as standard KL-unbalanced optimal transport.
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+\end{document}
