@@ -82,7 +82,7 @@ class SNDataset:
                     calib_rel_err=sp['K_mad_rel'][keep], filename=sp['filename'][keep])
 
     def total_flux_curve(self, name):
-        """Daily total flux in the SN window from photometry (see README)."""
+        """Daily total flux in the SN window from photometry (see data/data_description.md)."""
         with h5py.File(self.path, 'r') as h:
             l = h['sne'][name]['lightcurve']
             return {k: l[k][:] for k in l}
