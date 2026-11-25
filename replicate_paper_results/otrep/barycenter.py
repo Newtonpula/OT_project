@@ -52,7 +52,7 @@ def cost_matrix(wave):
 
 
 def barycenters(A, M, reg, weights, method='sinkhorn', backend='auto',
-                num_iter_max=NUM_ITER_MAX, stop_thr=STOP_THR, edges=None):
+                num_iter_max=NUM_ITER_MAX, stop_thr=STOP_THR, edges=None, chunk=4096):
     """Solve G independent barycenter problems.
 
     A        (n, G, k) histograms: k distributions on n bins for each of the G problems; each sums to 1
@@ -62,12 +62,19 @@ def barycenters(A, M, reg, weights, method='sinkhorn', backend='auto',
     method   'sinkhorn', 'sinkhorn_log', 'paper' or 'exact' (see the module docstring)
     backend  'auto' (POT if installed), 'pot' or 'numpy'
     edges    (n + 1,) bin edges, for 'exact'
+    chunk    solve at most this many problems at a time (bounds memory; results do not depend on it)
 
     Returns (bary, info): bary is (n, G); info holds n_iter (G,), err (G,), the backend used and, for 'paper',
     the reg chosen for each problem.
     """
     A = np.asarray(A, float)
     W = np.asarray(weights, float)
+    if A.shape[1] > chunk:
+        parts = [barycenters(A[:, s:s + chunk], M, reg, W[s:s + chunk], method, backend, num_iter_max, stop_thr,
+                             edges, chunk) for s in range(0, A.shape[1], chunk)]
+        info = {k: np.concatenate([p[1][k] for p in parts]) for k in parts[0][1] if k != 'backend'}
+        info['backend'] = parts[0][1]['backend']
+        return np.concatenate([p[0] for p in parts], axis=1), info
     if method == 'exact':
         if edges is None:
             raise ValueError('method="exact" needs the bin edges')

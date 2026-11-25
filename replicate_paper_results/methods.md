@@ -135,6 +135,15 @@ the shapes are needed. This matters because most days have no spectrum and there
 - SN 2006cp (Ia): 8 observed spectra, from −11.75 to +8.19 d.
 - SN 2006be (II): 4 observed spectra, from −72.06 to −39.06 d.
 
+**Our quantitative check (not in the paper).** The paper validates the series with photometry; we drop that (§6).
+Instead, each interior OT-ready spectrum is withheld in turn and interpolated from the other spectra in two ways:
+
+- from the tightest pair of other spectra that brackets it, normally its two neighbours (as in Test 1);
+- from all bracketing pairs spanning less than 40 d, combined with Eq. 6 (as in steps 1–4).
+
+The result is compared with the withheld spectrum through Eq. 4. The withheld spectrum is an observation, so ε
+includes its noise.
+
 ## 6. Where we depart from the paper
 
 Our goal is to compare balanced and unbalanced OT, so the photometric steps of the paper are dropped:
@@ -146,7 +155,8 @@ Our goal is to compare balanced and unbalanced OT, so the photometric steps of t
 - **Weights:** Eqs. 5–6 use $1/\Sigma(\epsilon)_i^2$ only; the paper's MAD(K) term needs photometry.
 - **Σ(ε):** the plane is refitted to the ε values obtained with `total` rescaling.
 - **Not reproduced:** the photometric validation of Sect. 4.2. This covers the residuals φ and Φ (Eqs. 7–8),
-  the leave-one-out test, and Figs. 7, 8, C.1 and C.2.
+  the leave-one-out test, and Figs. 7, 8, C.1 and C.2. It is replaced by the check in §5, which withholds
+  observed spectra.
 
 ## 7. Not stated in the paper, and our choices
 
@@ -187,8 +197,10 @@ Our goal is to compare balanced and unbalanced OT, so the photometric steps of t
     target's phase.
   - It is not said which points are fitted. We fit each method and SN type separately, and in Test 2 each method
     uses its own plane.
-  - How it is evaluated for observed SNe outside the model phase range is still open, for example for SNe II long
-    after $t_\mathrm{PT}$.
+  - How it is evaluated for observed SNe outside the model phase range is not given. We clip the phase to the
+    model range: −5 to 30 d for SNe Ia, −120 to 0 d for SNe II.
+  - Eight SNe II have no measured $t_\mathrm{PT}$. Their phases count from the first spectrum, so only the gap
+    term of the plane is meaningful for them.
 - **Test 2:** Fig. 4 draws only four cycles. We slide windows of W = 5, 6, … consecutive spectra:
   - each window has 4 inputs and a contiguous block of W − 4 withheld targets after p = 1, 2 or 3 inputs;
   - Fig. 4 shows W = 5 with p = 1–3, and W = 6 with p = 1;

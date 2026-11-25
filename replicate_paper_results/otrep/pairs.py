@@ -1,8 +1,17 @@
-"""Which spectra to interpolate: triplets for Test 1, Fig. 4 windows for Test 2.
+"""Which spectra to interpolate: triplets for Test 1, Fig. 4 windows for Test 2, bracketing pairs for Test 3.
 
 All functions take the sorted epochs t of one series and return indices into it.
 """
 import numpy as np
+
+
+def bracketing(t, t0, max_gap=None, exclude=()):
+    """Test 3 (Sect. 4.2): all pairs (i, j) with t[i] < t0 < t[j] spanning less than max_gap, skipping `exclude`."""
+    t = np.asarray(t, float)
+    ex = set(exclude)
+    left = [i for i in range(len(t)) if t[i] < t0 and i not in ex]
+    right = [j for j in range(len(t)) if t[j] > t0 and j not in ex]
+    return [(i, j) for i in left for j in right if max_gap is None or t[j] - t[i] < max_gap]
 
 
 def triplets(t, alpha_range=(0.45, 0.55), max_gap=None):

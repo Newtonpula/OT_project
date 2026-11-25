@@ -50,6 +50,21 @@ def interpolate(rho_a, rho_b, alpha, method='ot', M=None, reg=1e-3, solver='sink
     raise ValueError(f'unknown method {method!r}')
 
 
+def run_methods(left, right, alpha, total, M, edges, reg, solvers, backend='auto', baselines=('linear', 'geometric')):
+    """The non-OT baselines and every OT solver on stacked pairs, each result rescaled to `total`.
+
+    left, right  (m, L) unit-sum shapes of the pairs; alpha (m,); total (m,) target totals
+    Returns ({key: (m, L) masses}, {solver: info}).
+    """
+    out = {b: rescale(interpolate(left, right, alpha, method=b)[0], total) for b in baselines}
+    infos = {}
+    for s in solvers:
+        shapes, infos[s] = interpolate(left, right, alpha, method='ot', M=M, reg=reg, solver=s, edges=edges,
+                                       backend=backend)
+        out[s] = rescale(shapes, total)
+    return out, infos
+
+
 def rescale(shapes, total):
     """Scale shapes (m, L) so that row i sums to total[i]."""
     shapes = np.atleast_2d(shapes)

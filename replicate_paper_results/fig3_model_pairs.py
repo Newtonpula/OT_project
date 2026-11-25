@@ -32,7 +32,7 @@ import numpy as np  # noqa: E402
 from otrep import data, plotting, sigma  # noqa: E402
 from otrep.barycenter import cost_matrix  # noqa: E402
 from otrep.config import BASELINES, MAX_GAP, MODEL_PHASES, MODEL_WINDOW, SOLVERS, TEST1_ALPHA, suffix  # noqa: E402
-from otrep.interpolate import interpolate, rescale  # noqa: E402
+from otrep.interpolate import run_methods  # noqa: E402
 from otrep.metrics import eps  # noqa: E402
 from otrep.pairs import triplets  # noqa: E402
 
@@ -55,16 +55,14 @@ def collect(rebin, max_gap):
 
 
 def run_series(left, right, alpha, total, M, edges, reg, solvers, backend):
-    """Baselines and OT solvers on stacked pairs; each result is rescaled to `total`. Returns {key: masses}."""
-    out = {b: rescale(interpolate(left, right, alpha, method=b)[0], total) for b in BASELINES}
-    for s in solvers:
-        t0 = time.time()
-        shapes, info = interpolate(left, right, alpha, method='ot', M=M, reg=reg, solver=s, edges=edges,
-                                   backend=backend)
-        out[s] = rescale(shapes, total)
+    """run_methods() with a timing line per OT solver. Returns {key: masses}."""
+    t0 = time.time()
+    out, infos = run_methods(left, right, alpha, total, M, edges, reg, solvers, backend, baselines=BASELINES)
+    for s, info in infos.items():
         extra = (f', reg {np.nanmin(info["reg"]):.1e}-{np.nanmax(info["reg"]):.1e}' if 'reg' in info else
                  f', iterations {info["n_iter"].min()}-{info["n_iter"].max()}' if s.startswith('sinkhorn') else '')
-        print(f'{s}: backend {info["backend"]}, {time.time() - t0:.0f} s{extra}')
+        print(f'{s}: backend {info["backend"]}{extra}')
+    print(f'all methods: {time.time() - t0:.0f} s')
     return out
 
 

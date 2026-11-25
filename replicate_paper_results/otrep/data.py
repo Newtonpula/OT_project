@@ -16,6 +16,11 @@ def names(kind, **kwargs):
     return READERS[kind]().names(**kwargs)
 
 
+def info(kind, name):
+    """Attributes of one series, e.g. info('sn', 'SN2011fe')['type']."""
+    return READERS[kind]().info(name)
+
+
 def load(kind, name, rebin=1, **kwargs):
     """`ot_measures()` of one series, as balanced-OT input.
 

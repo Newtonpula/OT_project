@@ -59,7 +59,8 @@ def binned_median(x, y, edges):
     return mid, np.array(med)
 
 
-def gap_scatter(types, gap, phase, eps_by, keys, phase_ranges, title, xlabel, name, bin_width=5.0):
+def gap_scatter(types, gap, phase, eps_by, keys, phase_ranges, title, xlabel, name, bin_width=5.0,
+                ylabel='ε (Eq. 4) over 3000–10000 Å [%]', panel='SN {type} models ({n} spectra)'):
     """Figs. 3 and 5: eps against the phase gap, one panel per SN type.
 
     Marker size and darkness grow with the phase of the interpolated spectrum, as in the paper. A line gives the
@@ -89,10 +90,10 @@ def gap_scatter(types, gap, phase, eps_by, keys, phase_ranges, title, xlabel, na
         cb = fig.colorbar(ScalarMappable(norm=norm, cmap=ramp('#6e6d69')), ax=ax, pad=0.02, fraction=0.05)
         cb.set_label('Phase of the interpolated spectrum [d]', color=SECONDARY)
         cb.outline.set_visible(False)
-        ax.set_title(f'SN {sn_type} models ({sel.sum()} spectra)', loc='left')
+        ax.set_title(panel.format(type=sn_type, n=sel.sum()), loc='left')
         ax.set_xlabel(xlabel)
         ax.set_ylim(bottom=0)
-    axes[0].set_ylabel('ε (Eq. 4) over 3000–10000 Å [%]')
+    axes[0].set_ylabel(ylabel)
     handles = [Line2D([], [], marker='o', ls=SERIES[k]['ls'], color=SERIES[k]['color'], ms=5, lw=1.6,
                       label=SERIES[k]['label']) for k in keys]
     leg = axes[0].legend(handles=handles, loc='upper left', title=f'lines: median per {bin_width:g} d',

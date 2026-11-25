@@ -13,6 +13,7 @@ settings the paper leaves open. The authors' public code fixes several of those 
 | `fig2_blackbody.py` | Fig. 2: black bodies |
 | `fig3_model_pairs.py` | Test 1, Fig. 3: single pairs of model spectra; fits the Σ(ε) planes |
 | `fig5_model_windows.py` | Test 2, Figs. 4–5: weighted mean over the pairs of four model spectra |
+| `fig6_observed.py` | Test 3 on the observed SNe: leave-one-out check, and the daily series of Fig. 6 |
 | `tests/test_otrep.py` | checks of `otrep` |
 | `outputs/` | figures, tables and Σ(ε) planes written by the scripts |
 
@@ -23,13 +24,13 @@ The modules of `otrep/`:
 | `data.py` | loads any dataset as unit-sum shapes `rho = mass / total`, plus `total` and the bin edges |
 | `barycenter.py` | cost matrix and barycenter solvers |
 | `interpolate.py` | α; OT, linear or geometric interpolation; rescaling with `total`; Eqs. 5–6 |
-| `pairs.py` | Test 1 triplets and Fig. 4 windows |
+| `pairs.py` | Test 1 triplets, Fig. 4 windows, Test 3 bracketing pairs |
 | `sigma.py` | the Σ(ε) plane |
 | `metrics.py` | Eq. 4 |
 | `config.py` | grid, phase ranges, output names |
 | `plotting.py` | shared figure style |
 
-The scripts for the observed SNe will reuse `otrep` unchanged: `data.load('sn', ...)` returns the same keys as
+The script for the observed SNe uses the same modules: `data.load('sn', ...)` returns the same keys as
 `data.load('model', ...)`.
 
 ### Interpolation methods
@@ -113,6 +114,12 @@ Test 2 (Fig. 5; under a minute):
 
 ```bash
 python replicate_paper_results/fig5_model_windows.py
+```
+
+Test 3 on the observed SNe (Fig. 6 and the leave-one-out check; a few minutes). It also reads the Test 1 planes:
+
+```bash
+python replicate_paper_results/fig6_observed.py
 ```
 
 Common options:
@@ -244,6 +251,54 @@ exact W2). `sinkhorn_log` at reg = 1e-3 has median ε 35.5% for SN Ia and 26.4% 
    - The paper says the opposite: residuals larger than in Fig. 3 at a given Δph. That does not fit its own
      definition of Δph as the largest gap in the mean.
 3. **Exact W2 stays far worse than linear interpolation:** 41% against 19% for SN Ia at 30 d.
+
+### Test 3 (Sect. 4.2, Fig. 6): observed supernovae
+
+Only `mass` and `total` are used, so the paper's photometric validation (Figs. 7, 8, C.1, C.2) is replaced by a
+leave-one-out check (methods.md, §5).
+
+**Setup**
+- Sample: 132 SNe with interior OT-ready spectra. This gives 1864 withheld spectra: 1602 SN Ia spectra from 105
+  SNe and 262 SN II spectra from 27 SNe.
+- Each withheld spectrum is interpolated from the others in two ways:
+  - **single:** from the tightest bracketing pair;
+  - **weighted:** from all bracketing pairs spanning less than 40 d, with weights 1/Σ(ε)² from each method's model
+    plane.
+- In total this is 226,788 pair interpolations, which take about 2 minutes.
+
+| Output | What it shows |
+|---|---|
+| `test3_loo_reg1e-03.csv` | ε of every method, single and weighted, for every withheld spectrum |
+| `test3_loo_<single\|weighted>_<paper\|exact>_reg1e-03.png` | ε against the gap of the tightest bracketing pair |
+| `fig6_SN2006cp_reg1e-03.png`, `fig6_SN2006be_reg1e-03.png` | Fig. 6: daily series over the observed spectra, one column per method |
+
+**Median ε by the gap of the tightest bracketing pair.** Each cell gives the single value / the weighted value:
+
+| Gap | Ia linear | Ia authors' | Ia exact W2 | II linear | II authors' | II exact W2 |
+|---|---|---|---|---|---|---|
+| 0–5 d | 4.5 / 4.3% | 4.5 / 4.3% | 6.2 / 8.9% | 4.8 / 3.9% | 4.8 / 3.9% | 5.5 / 6.5% |
+| 5–10 d | 5.6 / 6.9% | 5.4 / 7.0% | 9.9 / 14.2% | 4.9 / 4.7% | 4.6 / 4.5% | 8.4 / 11.0% |
+| 10–20 d | 8.2 / 11.1% | 7.9 / 10.8% | 13.7 / 18.4% | 6.3 / 6.5% | 5.9 / 5.8% | 11.5 / 14.2% |
+| 20–40 d | 12.3 / 14.8% | 12.0 / 14.4% | 24.5 / 26.1% | 9.9 / 10.0% | 9.4 / 9.6% | 20.0 / 20.0% |
+
+The bins hold 1017, 230, 222 and 133 SN Ia spectra, and 108, 53, 50 and 51 SN II spectra. The geometric mean
+behaves like the authors' settings.
+
+**What the numbers show:**
+
+1. **The ranking is the same as on the models.** Authors' settings ≈ geometric mean ≳ linear ≫ exact W2.
+   - The authors' "OT" beats linear interpolation for 66–76% of the withheld spectra, but by only about 0.3
+     percentage points in median.
+   - Exact W2, the converged balanced OT, has about twice the error of linear interpolation at gaps above 5 d. It
+     beats linear for only 13–15% of the withheld spectra.
+2. **Most withheld spectra have close neighbours.** The median gap is 3.1 d for SNe Ia and 7.0 d for SNe II, so the
+   medians sit near the noise floor of the observations, about 4–5%.
+3. **The weighted mean helps only at gaps below 5 d**, where it averages out noise.
+   - At larger gaps it is worse than the tightest pair: the Σ(ε) weights from the models do not down-weight wide
+     pairs enough.
+   - Fig. 6 shows this for SN2006be: just before −47.5 d, the daily spectra still look like the early ones.
+4. **Fig. 6 is reproduced** for SN2006cp and SN2006be in the paper's format. All methods give smooth sequences;
+   exact W2 visibly reshapes features, for example near 6100 Å in SN2006cp.
 
 ### What this means for the balanced-vs-unbalanced comparison
 
